@@ -107,54 +107,58 @@ class Game
         {   
             i++;
             Show_Paths(i);
-            FindLevel(); //this will find level and give options to play the level            
+            if (FindLevel()==1)i--; //this will find level and give options to play the level            
         }
     }
 
-    public void FindLevel() throws IOException
+    public int FindLevel() throws IOException
     {
         int instrution;
         if (Player.getXP()==0)
         {
-            if (Take_Path(1)==-1){return;}
+            if (Take_Path(1)==-1){return -1;}
             Fight(1);
         }
         else if (Player.getXP()==20)
         {
             instrution=Take_Path(2);
-            if (instrution==-1){return;}
+            if (instrution==-1){return -1;}
             else if(instrution==1)
             {
                 Show_Paths(1);
                 Take_Path(1);
                 Fight(1);
+                return 1;
             }
             Fight(2);
         }
         else if (Player.getXP()==40)
         {
             instrution=Take_Path(3);
-            if (instrution==-1){return;}
+            if (instrution==-1){return -1;}
             else if(instrution==1)
             {
                 Show_Paths(2);
                 Take_Path(2);
-                Fight(2);                
+                Fight(2);      
+                return 1;          
             }
             Fight(3);
         }
         else
         {
             instrution=Take_Path(4);
-            if (instrution==-1){return;}
+            if (instrution==-1){return -1;}
             else if(instrution==1)
             {                
                 Show_Paths(3);
                 Take_Path(3);
-                Fight(3);
+                Fight(3); 
+                return 1;
             }
             Fight(4);  
         }
+        return 0;
     }
 
     public void generate_path()
@@ -234,7 +238,11 @@ class Game
             return 1;
         }
 
-        else if (choice==-1){System.out.println("Exiting.");}
+        else if (choice==-1)
+        {
+            System.out.println("Exiting.");
+            System.exit(0);
+        }
         else {System.out.println("Wrong input is selected");}
         return -1;
     }
@@ -282,6 +290,7 @@ class Game
             else 
             {
                 System.out.println("Wrong input is selected");
+                continue;
             }
 
             if (Player.Special_move>-1){Player.decrease_Special_move();}//to decrease the special power if activated
@@ -364,10 +373,23 @@ class generate_path{
 }
 
 
-class Hero
+abstract class Person
 {
-    protected int HP,XP=0,damage,MaxHP,DefandHP,total_move=0,Special_move=-1;
+    protected int HP,MaxHP;
+    abstract public void Attack(Person c);
+    public void reduceHP(int damage)
+    {
+        this.HP-=damage;
+        if (this.HP<0)this.HP=0;
+    }
+    public int getHP(){return this.HP;}
+    public int getMaxHP(){return this.MaxHP;}
+}
 
+abstract class Hero extends Person
+{
+    protected int XP=0,damage,DefandHP,total_move=0,Special_move=-1;
+    @Override
     public void reduceHP(int damage)
     {
         this.HP-=damage;
@@ -403,25 +425,21 @@ class Hero
             this.MaxHP=250;
         }
     }
-    public int getHP(){return this.HP;}
-    public int getMaxHP(){return this.MaxHP;}
     public int getXP(){return this.XP;}
     public void setXP(int _XP){this.XP=_XP;}
     public int getDefese(){return this.DefandHP;}
-
-    public void Attack(Monster Enemy)
+    @Override
+    public void Attack(Person Enemy)
     {   
         System.out.println("You choose to attack.\nYou attacked and inflicted "+this.damage+" damage to the monster.");
         Enemy.reduceHP(this.damage);
     }
-
     public void Defend(Monster Enemy)
     {
         System.out.println("You choose to defend\nMonster attack reduced by"+this.DefandHP);
     }
-
-    public void SpecialAttack_Start(Monster Enemy){}
-    public void SpecialAttack_End(Monster Enemy){}
+    abstract public void SpecialAttack_Start(Monster Enemy);
+    abstract public void SpecialAttack_End(Monster Enemy);
 }
 class Warrior extends Hero{
     Warrior()
@@ -510,18 +528,12 @@ class Healer extends Hero{
 }
 
 
-class Monster
+abstract class Monster extends Person
 {
     Random random=new Random();
-    protected int HP,MaxHP,nextAttack;
-    public int getHP(){return this.HP;}
-    public int getMaxHP(){return this.MaxHP;}
-    public void reduceHP(int damage)
-    {
-        this.HP-=damage;
-        if (this.HP<0)this.HP=0;
-    }
-    public void Attack(Hero Player)
+    protected int nextAttack;
+    @Override
+    public void Attack(Person Player)
     {
         int damage=(int)Math.round((Player.getHP()/8)+random.nextGaussian()*(Player.getHP()/8))-1;
         if (damage<0)damage=0;
@@ -574,7 +586,7 @@ class Lionfang extends Monster{
         this.MaxHP=250;
     }
     @Override
-    public void Attack(Hero Player)
+    public void Attack(Person Player)
     {
         Random probablity=new Random();
         if ((probablity.nextInt(10)+1)==1)// to show 1/10 probablity
